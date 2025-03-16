@@ -44,8 +44,6 @@ class Link(models.Model):
     specific = models.ForeignKey(Type, on_delete=models.CASCADE, related_name='specific_links')
     link_name = models.ForeignKey(Object_house, on_delete=models.SET_NULL, null=True,  blank=True)
     link_description = models.TextField(default="Описание отсутствует")
-    # def __str__(self):
-    #     return f"{self.connection.name} - {self.specific.name}"
 
     def __str__(self):
         return f"{self.connection.source.name} -> {self.connection.target.name} ({self.specific.type_name})"
