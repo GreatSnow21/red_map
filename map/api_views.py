@@ -5,7 +5,6 @@ from .serializers import NodeSerializer, EdgeSerializer
 class NodeViewSet(viewsets.ModelViewSet):
     queryset = Node.objects.all()
     serializer_class = NodeSerializer
-
 class EdgeViewSet(viewsets.ModelViewSet):
     queryset = Edge.objects.all()
     serializer_class = EdgeSerializer
