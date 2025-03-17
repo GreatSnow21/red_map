@@ -9,6 +9,7 @@
         {{ form.as_p }}
             <button type="submit" name="find_route">Найти маршрут</button>
             <button type="submit" name="detect_communities">Кластеризация Лувена</button>
+            <button type="submit" name="calculate_pagerank">PageRank</button>
     </form>
 </div>
 
@@ -63,6 +64,30 @@
         polygon.bindPopup("{{ node.name }} (Сообщество: {{ node.community }})");
     {% endfor %}
 {% endif %}
+
+{% if nodes_data_pr and pagerank_scores %}
+// Функция для вычисления цвета на основе рейтинга PageRank
+function getColor(pagerank) {
+    // Нормализуем рейтинг от 0 до 1
+    var normalizedRank = (pagerank * 10) / 3;  // Предполагаем, что рейтинг уже в диапазоне [0, 1]
+
+    // Создаём цветовую шкалу от оранжевого (#FFA500) к синему (#005AFF)
+    return chroma.scale(['#FFA500', '#005AFF'])(normalizedRank).hex();
+}
+
+// Отображение PageRank
+    {% for node in nodes_data_pr %}
+        var pagerank = {{ node.pagerank }};
+        var color = getColor(pagerank);  // Получаем цвет на основе рейтинга
+        console.log({{ node.id }}, " цвет ", color);
+        var polygon = L.polygon(
+            {{ node.geom|safe }},  // Координаты полигона здания
+            {color: color, fillColor: color, fillOpacity: 0.7}  // Заливка цветом
+        ).addTo(map);
+        polygon.bindPopup("{{ node.name }} (PageRank: {{ node.pagerank|floatformat:2 }})");
+    {% endfor %}
+{% endif %}
+
 </script>
 
 {% endblock %}
