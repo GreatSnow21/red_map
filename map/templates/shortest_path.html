@@ -7,7 +7,8 @@
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit">Найти маршрут</button>
+            <button type="submit" name="find_route">Найти маршрут</button>
+            <button type="submit" name="detect_communities">Кластеризация Лувена</button>
     </form>
 </div>
 
@@ -47,6 +48,20 @@
         style: { color: 'red', fillOpacity: 0.5 }
     }).addTo(map);
     endPolygon.bindPopup("Конечная точка").openPopup();
+{% endif %}
+
+// Отображение кластеров
+{% if nodes_data %}
+    var colors = ['red', 'green', 'blue', 'orange', 'purple', 'yellow'];
+    {% for node in nodes_data %}
+        var community = {{ node.community }};
+        var color = colors[community % colors.length];
+        var polygon = L.polygon(
+            {{ node.geom|safe }},  // Координаты полигона здания
+            {color: color, fillOpacity: 0.5}
+        ).addTo(map);
+        polygon.bindPopup("{{ node.name }} (Сообщество: {{ node.community }})");
+    {% endfor %}
 {% endif %}
 </script>
 
