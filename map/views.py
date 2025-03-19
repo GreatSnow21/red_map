@@ -8,10 +8,6 @@ ROADS_GEOJSON = "roads_drive_spb.geojson"
 
 
 def map_view(request):
-    path = None
-    path_coordinates = []
-    start_geometry = None
-    end_geometry = None
     communities = None
     nodes_data = []
     nodes_data_pr = []
@@ -20,35 +16,8 @@ def map_view(request):
     if request.method == 'POST':
         form = RouteForm(request.POST)
         if form.is_valid():
-            if 'find_route' in request.POST:
-                start_node = form.cleaned_data['start_node']
-                end_node = form.cleaned_data['end_node']
 
-                # Получаем координаты начальной и конечной точек
-                start_coords = (start_node.geom.centroid.x, start_node.geom.centroid.y)
-                end_coords = (end_node.geom.centroid.x, end_node.geom.centroid.y)
-
-                # Создаём граф дорог
-                graph = create_road_graph(ROADS_GEOJSON)
-
-                # Находим ближайшие вершины графа
-                start_nearest = find_nearest_node(graph, start_coords)
-                end_nearest = find_nearest_node(graph, end_coords)
-
-                # Находим кратчайший путь
-                path = find_shortest_path(graph, start_nearest, end_nearest)
-
-                # Получаем координаты для пути
-                if path:
-                    path_coordinates = [[y, x] for x, y in path]  # Преобразуем в [широта, долгота]
-
-                # Используем NodeSerializer для получения GeoJSON
-
-                start_geometry = NodeSerializer(start_node).data['geometry']
-                end_geometry = NodeSerializer(end_node).data['geometry']
-
-
-            elif 'detect_communities' in request.POST:  # Если нажата кнопка "Кластеризация Лувена"
+            if 'detect_communities' in request.POST:  # Если нажата кнопка "Кластеризация Лувена"
 
                 # Логика для кластеризации
 
@@ -92,16 +61,58 @@ def map_view(request):
     else:
         form = RouteForm()
 
-    return render(request, 'shortest_path.html', {
+    return render(request, 'assistant.html', {
+        'communities': communities,
+        'nodes_data': nodes_data,
+        'nodes_data_pr': nodes_data_pr,
+        'pagerank_scores': pagerank_scores
+    })
+
+def routes_view(request):
+    path = None
+    path_coordinates = []
+    start_geometry = None
+    end_geometry = None
+
+    if request.method == 'POST':
+        form = RouteForm(request.POST)
+        if form.is_valid():
+            if 'find_route' in request.POST:
+                start_node = form.cleaned_data['start_node']
+                end_node = form.cleaned_data['end_node']
+
+                # Получаем координаты начальной и конечной точек
+                start_coords = (start_node.geom.centroid.x, start_node.geom.centroid.y)
+                end_coords = (end_node.geom.centroid.x, end_node.geom.centroid.y)
+
+                # Создаём граф дорог
+                graph = create_road_graph(ROADS_GEOJSON)
+
+                # Находим ближайшие вершины графа
+                start_nearest = find_nearest_node(graph, start_coords)
+                end_nearest = find_nearest_node(graph, end_coords)
+
+                # Находим кратчайший путь
+                path = find_shortest_path(graph, start_nearest, end_nearest)
+
+                # Получаем координаты для пути
+                if path:
+                    path_coordinates = [[y, x] for x, y in path]  # Преобразуем в [широта, долгота]
+
+                # Используем NodeSerializer для получения GeoJSON
+
+                start_geometry = NodeSerializer(start_node).data['geometry']
+                end_geometry = NodeSerializer(end_node).data['geometry']
+
+    else:
+        form = RouteForm()
+
+    return render(request, 'routes.html', {
         'form': form,
         'path': path,
         'path_coordinates': path_coordinates,
         'start_geometry': start_geometry,
         'end_geometry': end_geometry,
-        'communities': communities,
-        'nodes_data': nodes_data,
-        'nodes_data_pr': nodes_data_pr,
-        'pagerank_scores': pagerank_scores
     })
 
 '''

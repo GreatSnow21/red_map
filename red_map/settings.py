@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "django.contrib.gis",
     "rest_framework_gis",
     "leaflet",
+    "django_bootstrap5",
 ]
 
 REST_FRAMEWORK = {

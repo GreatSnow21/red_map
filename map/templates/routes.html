@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="d-flex">
+<!-- Меню с формой -->
+    <div id="map" class="p-2 flex-fill" style="width: 70%; height: 600px;"></div>
+
+    <div class="menu p-2 flex-fill d-flex flex-column h-100">
+    <form method="post" class="d-flex flex-column h-100">
+        {% csrf_token %}
+        <ul class="flex-grow-1 justify-content-between">
+            <h3 class="d-flex justify-content-center">Поиск кратчайшего пути</h3>
+            <li class="p-2 flex-grow-1 d-flex align-items-center">{{ form.as_p }}</li>
+            <li class="p-2 flex-grow-1 d-flex align-items-center"><button class="btn btn-secondary" type="submit" name="find_route">Найти маршрут</button></li>
+        </ul>
+    </form>
+    </div>
+<script>
+
+    var map = L.map('map', {attributionControl: false}).setView([59.939095, 30.315877], 13);
+
+    var CartoDB_DarkMatter = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 20
+}).addTo(map);
+
+
+ // Отрисовка маршрута, если он есть
+{% if path_coordinates %}
+    console.log("Координаты пути из Django:", {{ path_coordinates|safe }});  // Отладочная информация
+    var coordinates = {{ path_coordinates|safe }};  // Передаём координаты из Django в JavaScript
+    L.polyline(coordinates, {color: 'blue'}).addTo(map);
+{% endif %}
+
+// Отрисовка полигонов для начальной и конечной точек
+{% if start_geometry %}
+    var startGeoJSON = {{ start_geometry|safe }};
+    var startPolygon = L.geoJSON(startGeoJSON, {
+        style: { color: 'green', fillOpacity: 0.5 }
+    }).addTo(map);
+    startPolygon.bindPopup("Начальная точка").openPopup();
+{% endif %}
+
+{% if end_geometry %}
+    var endGeoJSON = {{ end_geometry|safe }};
+    var endPolygon = L.geoJSON(endGeoJSON, {
+        style: { color: 'red', fillOpacity: 0.5 }
+    }).addTo(map);
+    endPolygon.bindPopup("Конечная точка").openPopup();
+{% endif %}
+
+</script>
+</div>
+{% endblock %}
