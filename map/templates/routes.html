@@ -3,19 +3,80 @@
 {% block content %}
 
 <div class="d-flex">
-<!-- Меню с формой -->
+
     <div id="map" class="p-2 flex-fill" style="width: 70%; height: 600px;"></div>
 
-    <div class="menu p-2 flex-fill d-flex flex-column h-100">
+<!-- Меню с формой -->
+    <div class="form-container p-2 flex-fill d-flex flex-column h-100">
+    <div class="form-section">
     <form method="post" class="d-flex flex-column h-100">
         {% csrf_token %}
         <ul class="flex-grow-1 justify-content-between">
             <h3 class="d-flex justify-content-center">Поиск кратчайшего пути</h3>
-            <li class="p-2 flex-grow-1 d-flex align-items-center">{{ form.as_p }}</li>
+            <li class="p-2 flex-grow-1 d-flex align-items-center">{{ route_form.as_p }}</li>
             <li class="p-2 flex-grow-1 d-flex align-items-center"><button class="btn btn-secondary" type="submit" name="find_route">Найти маршрут</button></li>
         </ul>
     </form>
     </div>
+    <div class="form-section">
+    <form method="post" id="route-by-type-form" class="d-flex flex-column h-100">
+        {% csrf_token %}
+        <ul><h4 class="d-flex justify-content-center">Поиск тематического маршрута</h4>
+            <li class="p-2 flex-grow-1 d-flex align-items-center">{{ route_by_type_form.as_p }}</li>
+            <li class="p-2 flex-grow-1 d-flex align-items-center"><button class="btn btn-secondary" type="submit" name="find_routes_by_type">Найти маршрут</button></li>
+        </ul>
+    </form>
+    </div>
+    </div>
+
+<!-- Скрипт динамического обновления content_type -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typeField = document.querySelector('#id_type');  // Поле выбора типа объекта
+    const contentTypeField = document.querySelector('#id_content_type');  // Поле выбора content_type
+
+    if (typeField && contentTypeField) {
+        let contentData = [];
+
+        // Загружаем полный список content_type один раз при загрузке страницы
+        fetch('/map/api/content_type/')
+            .then(response => response.json())
+            .then(data => {
+                contentData = data;
+            })
+            .catch(error => console.error('Ошибка загрузки данных:', error));
+
+        typeField.addEventListener('change', function() {
+            const typeValue = this.value;
+
+            if (!typeValue) {
+                console.error('Тип не выбран');
+                return;
+            }
+
+            // Фильтруем объекты по content_type_link
+            const filteredContent = contentData.filter(obj => obj.content_type_link === typeValue);
+
+            // Очищаем выпадающий список перед добавлением новых значений
+            contentTypeField.innerHTML = '';
+
+            filteredContent.forEach(content => {
+                const option = document.createElement('option');
+                option.value = content.content_type;
+                option.textContent = content.content_type;
+                contentTypeField.appendChild(option);
+            });
+
+            if (filteredContent.length === 0) {
+                console.warn('Нет объектов для выбранного типа');
+            }
+        });
+    }
+});
+</script>
+
+
+
 <script>
 
     var map = L.map('map', {attributionControl: false}).setView([59.939095, 30.315877], 13);
@@ -49,6 +110,28 @@
         style: { color: 'red', fillOpacity: 0.5 }
     }).addTo(map);
     endPolygon.bindPopup("Конечная точка").openPopup();
+{% endif %}
+
+// Отображение домов
+{% if nodes_data %}
+    {% for node in nodes_data %}
+        var polygon = L.polygon(
+            {{ node.geom|safe }},  // Координаты полигона здания
+            {color: 'blue', fillOpacity: 0.5}
+        ).addTo(map);
+        polygon.bindPopup("{{ node.name }}");
+    {% endfor %}
+{% endif %}
+
+// Отображение маршрутов
+{% if routes %}
+    {% for route in routes %}
+        var path_coordinates = [];
+        {% for point in route.path %}
+            path_coordinates.push([{{ point.1 }}, {{ point.0 }}]);  // Преобразуем координаты (x, y) -> (lat, lon)
+        {% endfor %}
+        var path = L.polyline(path_coordinates, {color: 'red'}).addTo(map);
+    {% endfor %}
 {% endif %}
 
 </script>
