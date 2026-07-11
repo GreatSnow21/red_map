@@ -36,7 +36,7 @@ class Object_house(models.Model):
     object_date = models.DateField(null=True, blank=True)
     object_description = models.TextField(default="Описание отсутствует")
     def __str__(self):
-        return self.object_name
+        return f"{self.build.name} ({self.object_type.type} - {self.object_name})"
 
 class Link(models.Model):
     """ Связь на дуге (возможно, избыточная таблица) """
