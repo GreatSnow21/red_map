@@ -46,7 +46,7 @@ class Link(models.Model):
     link_description = models.TextField(default="Описание отсутствует")
 
     def __str__(self):
-        return f"{self.connection.source.name} -> {self.connection.target.name} ({self.specific.type_name})"
+        return f"{self.connection.source.name} -> {self.connection.target.name} ({self.specific.type})"
 
 
 

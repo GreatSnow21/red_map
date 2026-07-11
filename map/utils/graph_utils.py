@@ -1,7 +1,8 @@
 import networkx as nx
 import geopandas as gpd
 import math
-from map.models import Node, Edge
+from community import community_louvain
+from map.models import Node, Edge, Link, Object_house
 
 def create_road_graph(roads_geojson):
     # Загружаем данные о дорогах
@@ -43,6 +44,55 @@ def find_nearest_node(graph, point):
             nearest_node = node
 
     return nearest_node
+
+# -----------------------------------------------------------------------------
+
+def build_combined_graph():
+    """
+    Создаёт граф домов на основе существующих связей (Edge), общих типов и характеристик связей (Link).
+    """
+    graph = nx.Graph()
+
+    # Добавляем вершины (дома)
+    nodes = Node.objects.all()
+    for node in nodes:
+        graph.add_node(node.id, pos=(node.geom.centroid.x, node.geom.centroid.y))
+
+    # Создаём словарь для хранения типов каждого дома
+    house_types = {}
+    for obj in Object_house.objects.all():
+        if obj.build.id not in house_types:
+            house_types[obj.build.id] = set()
+        house_types[obj.build.id].add(obj.object_type.type)
+
+    # Добавляем рёбра на основе существующих связей (Edge)
+    for edge in Edge.objects.all():
+        source_id = edge.source.id
+        target_id = edge.target.id
+
+        # Вычисляем вес ребра на основе характеристик связей (Link)
+        link_weight = Link.objects.filter(connection=edge).count()  # Количество характеристик связи
+
+        # Вычисляем вес ребра на основе общих типов
+        common_types = house_types.get(source_id, set()) & house_types.get(target_id, set())
+        type_weight = len(common_types)
+
+        # Общий вес ребра
+        weight = link_weight + type_weight
+
+        # Добавляем ребро в граф
+        graph.add_edge(source_id, target_id, weight=weight)
+
+    return graph
+
+def detect_communities(graph):
+    """
+    Выполняет кластеризацию графа с использованием алгоритма Лувена.
+    Возвращает словарь, где ключи — это узлы, а значения — их кластеры.
+    """
+    partition = community_louvain.best_partition(graph)
+    return partition
+
 
 # def build_graph():
 #     # Создаём граф
