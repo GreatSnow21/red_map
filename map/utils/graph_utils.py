@@ -121,7 +121,7 @@ def build_graph():
         # 1. Вес на основе количества характеристик связи (Link)
         link_weight = Link.objects.filter(connection=edge).count()
 
-        # 2. Вес на основе общих типов объектов (Object_house)
+        # 2. Вес на основе общих На (Object_house)
         common_types = house_types.get(source_id, set()) & house_types.get(target_id, set())
         type_weight = len(common_types)
 

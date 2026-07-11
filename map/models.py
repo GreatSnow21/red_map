@@ -4,7 +4,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Node(models.Model):
     """ Вершина графа, представляет здание с его границами """
-    name = models.CharField(max_length=255, null=False, default="Unnamed Node")
+    name = models.CharField(max_length=255, null=False, default="Unnamed Node") # Имя постройки
     geom = models.PolygonField(srid=4326)  # Хранение контура здания
     status_active = models.BooleanField(default=True)  # Активен ли объект
     date_build = models.IntegerField("Год", validators=[
@@ -56,7 +56,7 @@ class Object_house(models.Model):
         return f"{self.build.name} ({self.object_type.type} - {self.object_name})"
 
 class Link(models.Model):
-    """ Связь на дуге (возможно, избыточная таблица) """
+    """ Связь на дуге """
     connection = models.ForeignKey(Edge, on_delete=models.CASCADE, related_name='links')
     specific = models.ForeignKey(Type, on_delete=models.CASCADE, related_name='specific_links')
     link_name = models.ForeignKey(Content_type, on_delete=models.CASCADE, related_name='links_name')

@@ -14,8 +14,8 @@ router.register(r'link', LinkViewSet)
 
 urlpatterns = [
     path('', TemplateView.as_view(template_name='index.html'), name='map'),  # Маршрут для карты
-    path('api/', include(router.urls)),
     path('assistant/', map_view, name='assistant'),
+    path('api/', include(router.urls)),
     path('assistant/routes', routes_view, name='routes'),
 ]
     # path('', index, name='index'),

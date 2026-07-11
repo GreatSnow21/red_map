@@ -17,3 +17,4 @@ class RouteByTypeForm(forms.Form):
                 self.fields['content_type'].queryset = Content_type.objects.filter(content_type_link=type_id)
             except (ValueError, TypeError):
                 pass
+
