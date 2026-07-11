@@ -137,31 +137,86 @@ def calculate_pagerank(graph):
     pagerank_scores = nx.pagerank(graph, weight='weight')  # Учитываем вес рёбер
     return pagerank_scores
 
-# def build_graph():
-#     # Создаём граф
-#     graph = nx.Graph()
-#
-#     # Добавляем вершины (Nodes)
-#     nodes = Node.objects.all()
-#     for node in nodes:
-#         graph.add_node(node.id, pos=(node.geom.centroid.x, node.geom.centroid.y))  # Используем центр полигона как координаты
-#
-#     # Добавляем рёбра (Edges)
-#     edges = Edge.objects.all()
-#     for edge in edges:
-#         # Вычисляем вес ребра (например, расстояние между source и target)
-#         source_node = Node.objects.get(id=edge.source.id)
-#         target_node = Node.objects.get(id=edge.target.id)
-#         weight = source_node.geom.distance(target_node.geom)  # Расстояние между объектами
-#         graph.add_edge(edge.source.id, edge.target.id, weight=weight)
-#
-#     return graph
+#--------------------------------------------------------------------------------------------
 
-# def find_shortest_path(graph, start_node_id, end_node_id):
-#     try:
-#         path = nx.astar_path(graph, start_node_id, end_node_id, weight='weight')
-#         print("Найден путь:", path)  # Отладочная информация
-#         return path
-#     except nx.NetworkXNoPath:
-#         print("Путь не найден")  # Отладочная информация
-#         return None
+def find_shortest_routes_by_type(graph, type_name, type_content):
+    """
+    Находит кратчайшие маршруты между зданиями, которые соответствуют выбранному Type и Object name.
+    """
+    # Находим все здания, которые соответствуют выбранному Type и Object name
+
+    print(type_name)
+    print(type_content)
+
+
+    link_objects = Link.objects.filter(specific=type_name, link_name=type_content)
+
+    edge_ids = link_objects.values_list('connection', flat=True)
+
+    unique_nodes = set()
+
+    for edge in Edge.objects.filter(id__in=edge_ids):
+        unique_nodes.add(edge.source_id)  # Добавляем source
+        unique_nodes.add(edge.target_id)  # Добавляем target
+
+    # Преобразуем множество в список
+    node_ids = list(unique_nodes)
+
+    roads_geojson = 'map/utils/roads_drive_spb.geojson'  # Путь к GeoJSON с дорогами
+    road_graph = create_road_graph(roads_geojson)
+
+    # Получаем координаты домов
+    nodes = Node.objects.filter(id__in=node_ids)
+
+    # Сопоставляем дома с ближайшими вершинами графа
+    node_to_graph_node = {}
+    for node in nodes:
+        if node.geom:
+            point = (node.geom.centroid.x, node.geom.centroid.y)  # Центр полигона здания
+            nearest_node = find_nearest_node(road_graph, point)
+            node_to_graph_node[node.id] = nearest_node
+
+    # Находим кратчайшие маршруты между всеми парами домов
+    routes = []
+    node_object = []
+    if len(node_ids) > 1:
+        for i in range(1, len(node_ids)):
+            source_id = node_ids[i-1]
+            target_id = node_ids[i]
+
+            # Получаем ближайшие вершины графа для source и target
+            source_node = node_to_graph_node.get(source_id)
+            target_node = node_to_graph_node.get(target_id)
+
+            if source_node and target_node:
+                # Находим кратчайший путь
+                path = find_shortest_path(road_graph, source_node, target_node)
+                if path:
+                    routes.append({
+                        'source': source_id,
+                        'target': target_id,
+                        'path': path,
+                    })
+
+    elif len(node_ids) == 0:
+        node_object = Object_house.objects.get(object_type=type_name, object_name=type_content).build
+        print(node_object)
+
+    else:
+        source_id = node_ids[0]
+        target_id = node_ids[0]
+
+        source_node = node_to_graph_node.get(source_id)
+        target_node = node_to_graph_node.get(target_id)
+
+        if source_node and target_node:
+            # Находим кратчайший путь
+            path = find_shortest_path(road_graph, source_node, target_node)
+            if path:
+                routes.append({
+                    'source': source_id,
+                    'target': target_id,
+                    'path': path,
+                })
+
+    return node_object, node_ids, routes
