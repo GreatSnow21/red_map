@@ -2,20 +2,20 @@
 
 {% block content %}
 
+<div class="d-flex">
 <!-- Меню с формой -->
-<div class="menu">
-    <form method="post">
+    <div id="map" class="p-2 flex-fill" style="width: 70%; height: 600px;"></div>
+
+    <div class="menu p-2 flex-fill d-flex flex-column h-100">
+    <form method="post" class="d-flex flex-column h-100">
         {% csrf_token %}
-        {{ form.as_p }}
-            <button type="submit" name="find_route">Найти маршрут</button>
-            <button type="submit" name="detect_communities">Кластеризация Лувена</button>
-            <button type="submit" name="calculate_pagerank">PageRank</button>
+        <ul class="flex-grow-1 justify-content-between">
+            <li class="p-2 flex-grow-1 d-flex align-items-center"><a class="btn btn-secondary" href="{% url 'routes' %}" role="button">Работа с маршрутами</a>
+            <li class="p-2 flex-grow-1 d-flex align-items-center"><button class="btn btn-secondary" type="submit" name="detect_communities">Кластеризация Лувена</button></li>
+            <li class="p-2 flex-grow-1 d-flex align-items-center"><button class="btn btn-secondary" type="submit" name="calculate_pagerank">PageRank</button></li>
+        </ul>
     </form>
-</div>
-
-
-<div id="map" style="height: 600px; width: 600px;"></div>
-
+    </div>
 <script>
 
     var map = L.map('map', {attributionControl: false}).setView([59.939095, 30.315877], 13);
@@ -89,5 +89,5 @@ function getColor(pagerank) {
 {% endif %}
 
 </script>
-
+</div>
 {% endblock %}
