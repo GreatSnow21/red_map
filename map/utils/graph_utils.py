@@ -93,6 +93,49 @@ def detect_communities(graph):
     partition = community_louvain.best_partition(graph)
     return partition
 
+#----------------------------------------------------------------------------------------
+
+def build_graph():
+    """
+    Создаёт граф домов с весами рёбер на основе количества связей и общих характеристик.
+    """
+    # Инициализируем граф
+    graph = nx.Graph()
+
+    # Добавляем узлы (дома)
+    for node in Node.objects.all():
+        graph.add_node(node.id, name=node.name)
+
+    # Создаём словарь для хранения типов объектов каждого дома
+    house_types = {}
+    for obj in Object_house.objects.all():
+        if obj.build.id not in house_types:
+            house_types[obj.build.id] = set()
+        house_types[obj.build.id].add(obj.object_type.type)
+
+    # Добавляем рёбра (связи между домами) с весами
+    for edge in Edge.objects.all():
+        source_id = edge.source.id
+        target_id = edge.target.id
+
+        # 1. Вес на основе количества характеристик связи (Link)
+        link_weight = Link.objects.filter(connection=edge).count()
+
+        # 2. Вес на основе общих типов объектов (Object_house)
+        common_types = house_types.get(source_id, set()) & house_types.get(target_id, set())
+        type_weight = len(common_types)
+
+        # Общий вес ребра (можно настроить формулу)
+        weight = link_weight + type_weight
+
+        # Добавляем ребро в граф
+        graph.add_edge(source_id, target_id, weight=weight)
+
+    return graph
+
+def calculate_pagerank(graph):
+    pagerank_scores = nx.pagerank(graph, weight='weight')  # Учитываем вес рёбер
+    return pagerank_scores
 
 # def build_graph():
 #     # Создаём граф

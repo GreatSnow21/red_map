@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from .forms import RouteForm
-from .utils.graph_utils import create_road_graph, find_shortest_path, find_nearest_node, build_combined_graph, detect_communities
+from .utils.graph_utils import create_road_graph, find_shortest_path, find_nearest_node, build_combined_graph, detect_communities, build_graph, calculate_pagerank
 from .serializers import NodeSerializer
 from .models import Node
 
@@ -14,6 +14,8 @@ def map_view(request):
     end_geometry = None
     communities = None
     nodes_data = []
+    nodes_data_pr = []
+    pagerank_scores = None
 
     if request.method == 'POST':
         form = RouteForm(request.POST)
@@ -56,8 +58,6 @@ def map_view(request):
 
                 # Получаем данные о зданиях (узлах) для визуализации
 
-                nodes_data = []
-
                 for node in Node.objects.all():
 
                     # Преобразуем координаты из кортежей в списки
@@ -65,17 +65,30 @@ def map_view(request):
                     geom_coords = [[y, x] for x, y in node.geom.coords[0]]
 
                     nodes_data.append({
-
                         'id': node.id,
-
                         'name': node.name,
-
-                        'geom': geom_coords,  # Координаты полигона здания (уже в формате [[lat, lon], ...])
-
+                        'geom': geom_coords,
                         'community': communities.get(node.id, -1)  # Номер сообщества
-
                     })
 
+            elif 'calculate_pagerank' in request.POST:  # Если нажата кнопка "PageRank"
+                # Логика для вычисления PageRank
+                graph = build_graph()
+                pagerank_scores = calculate_pagerank(graph)
+                print("Результат PageRank:", pagerank_scores)
+
+                # Получаем данные о зданиях (узлах) для визуализации
+
+                for node in Node.objects.all():
+                    # Преобразуем координаты из кортежей в списки
+                    geom_coords = [[y, x] for x, y in node.geom.coords[0]]
+                    nodes_data_pr.append({
+                        'id': node.id,
+                        'name': node.name,
+                        'geom': geom_coords,  # Координаты полигона здания (уже в формате [[lat, lon], ...])
+                        'pagerank': pagerank_scores.get(node.id, 0)  # Рейтинг PageRank
+                    })
+                print(nodes_data_pr)
     else:
         form = RouteForm()
 
@@ -86,7 +99,9 @@ def map_view(request):
         'start_geometry': start_geometry,
         'end_geometry': end_geometry,
         'communities': communities,
-        'nodes_data': nodes_data
+        'nodes_data': nodes_data,
+        'nodes_data_pr': nodes_data_pr,
+        'pagerank_scores': pagerank_scores
     })
 
 '''
